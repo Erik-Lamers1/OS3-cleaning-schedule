@@ -21,5 +21,3 @@ def get_webpage_with_auth(url, username, password, logger):
         logger.error('HTTP error occurred while trying to retrieve {}\nGot error: {}'.format(url, e))
     except Exception as e:
         logger.error('Unknown error occurred while trying to retrieve {}\nError msg: {}'.format(url, e))
-    finally:
-        return ''

@@ -44,6 +44,7 @@ class OS3Website(object):
         students = []
         if not self._is_os3_webpage(self._url):
             return students
+
         webpage = get_webpage_with_auth(self._url, self.http_user, self.http_pass, self.logger)
 
         soup = BeautifulSoup(webpage, "html.parser")
@@ -53,7 +54,7 @@ class OS3Website(object):
                 if self.exclude_playground and 'playground' in a.text.lower():
                     self.logger.debug('Found playground link in student links, skipping...')
                     continue
-                students.append(a.text)
+                students.append(a.text.strip())
         return students
 
     def get_url(self, url):
