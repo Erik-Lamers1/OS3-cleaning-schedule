@@ -4,8 +4,9 @@ from argparse import ArgumentParser
 import logging
 from utils.logger import configure_logging
 from os import getenv
+from sys import argv
 
-from students import Students
+from os3website import OS3Website
 
 
 def parse_args(args=None):
@@ -19,7 +20,7 @@ def parse_args(args=None):
 
 def main(args=None):
     args = parse_args(args)
-    logger = configure_logging(__name__, logging.DEBUG if args.debug else logging.INFO)
+    logger = configure_logging(argv[0], logging.DEBUG if args.debug else logging.INFO)
 
     logger.debug('Validating environment')
     password = getenv('OS3_HTTP_PASS')
@@ -32,7 +33,7 @@ def main(args=None):
         exit(1)
 
     logger.info('Getting list of students')
-    std = Students(username, password)
+    std = OS3Website(username, password, args.year)
     students = std.get_all_students()
     if args.debug:
         logger.debug('Found {} students:'.format(len(students)))
