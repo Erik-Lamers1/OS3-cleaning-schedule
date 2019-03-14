@@ -70,7 +70,7 @@ class OS3Website(object):
     def get_elements_from_webpage(self, url, element, **kwargs):
         """
         Uses BS to get all elements of a certain type from a OS3 webpage
-        :param url: str: The URL of the OS3 webpage to get
+        :param url: str: The URL of the OS3 webpage to get (without <>)
         :param element: str: The element to search for
         :return:
         """

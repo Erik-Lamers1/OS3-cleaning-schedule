@@ -9,6 +9,9 @@ from sys import argv
 
 from os3website import OS3Website
 
+MAX_WEBSITE_RETRIES = 3
+CLEANING_TASK_LIST_URL = 'https://www.os3.nl/2018-2019/students/playground/cleaning'
+
 
 def parse_args(args=None):
     parser = ArgumentParser(description='Make OS3 cleaning schedule - For clean coffee')
@@ -38,12 +41,24 @@ def main(args=None):
         logger.critical('OS3_HTTP_USERNAME variable not set')
         exit(1)
 
-    logger.info('Getting list of students')
-    std = OS3Website(username, password, args.year)
-    students = std.get_all_students()
-    if args.debug:
-        logger.debug('Found {} students:'.format(len(students)))
-        print(students)
+    # Get a list of current students
+    website = OS3Website(username, password, args.year)
+    for i in range(0, MAX_WEBSITE_RETRIES):
+        logger.info('Getting list of students')
+        students = website.get_all_students()
+        if students:
+            if args.debug:
+                logger.debug('Found {} students:'.format(len(students)))
+                print(students)
+            break
+        else:
+            logger.warning('Did not get any students from OS3 site')
+            if i == MAX_WEBSITE_RETRIES:
+                logger.critical('Max retries reached, giving up')
+                exit(10)
+            else:
+                logger.info('Trying again, attempt {} of {}'.format(i+1, MAX_WEBSITE_RETRIES))
+
 
     # Remove students that operator asked to exclude
     if args.excluded_students_file:
@@ -71,6 +86,23 @@ def main(args=None):
 
     # TODO Remove debug print
     print(students)
+
+    # Get de items of the cleaning page
+    logger.info('Getting list of cleaning tasks')
+    for i in range(0, MAX_WEBSITE_RETRIES):
+        cleaning_tasks = website.get_elements_from_webpage(CLEANING_TASK_LIST_URL, "li", **{"class": "level1"})
+        if cleaning_tasks:
+            if args.debug:
+                logger.debug('Found the following cleaning tasks: {}'.format(cleaning_tasks))
+            break
+        else:
+            logger.warning('Did not receive a list of cleaning tasks from OS3 site')
+            if i == MAX_WEBSITE_RETRIES:
+                logger.critical('Max retries reached, giving up')
+                exit(11)
+            else:
+                logger.info('Trying again: attempt {} of {}'.format(i+1, MAX_WEBSITE_RETRIES))
+
 
 
 if __name__ == '__main__':
