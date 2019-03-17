@@ -72,6 +72,7 @@ class OS3Website(object):
         """
         if not self._is_os3_webpage(url):
             return None
+        self.logger.debug('Getting {}'.format(url))
         return get_webpage_with_auth(url, self.http_user, self.http_pass, self.logger)
 
     def get_elements_from_webpage(self, url, element, **kwargs):
