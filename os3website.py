@@ -1,9 +1,9 @@
-import requests.exceptions
-from sys import stderr
 from bs4 import BeautifulSoup
 
 from utils.logger import configure_logging
 from utils.networking import get_webpage_with_auth
+
+logger = configure_logging(__name__)
 
 
 class OS3Website(object):
@@ -11,15 +11,22 @@ class OS3Website(object):
     Preform operations on the OS3 website
     """
 
-    def __init__(self, http_user, http_pass, year='2018-2019', logger=None):
+    def __init__(self, http_user, http_pass, year='2018-2019'):
         self.include_unknown_type = True
         self.exclude_playground = True
         self.http_user = http_user
         self.http_pass = http_pass
         self.year = year
-        self.logger = logger or configure_logging(__name__)
+        self.logger = logger
         self._url = 'https://www.os3.nl/{}/start'.format(self.year)
         self._must_be_os3 = True
+
+    def set_log_level(self, level):
+        """
+        Set the logger leven of this class instance
+        :param level: logging.SOMELEVEL
+        """
+        self.logger.setLevel(level)
 
     def _is_os3_webpage(self, url):
         """
@@ -75,9 +82,12 @@ class OS3Website(object):
         :return:
         """
         webpage = get_webpage_with_auth(url, self.http_user, self.http_pass, self.logger)
+        found_elements = []
         if webpage:
             soup = BeautifulSoup(webpage, "html.parser")
-            return soup.find_all(element, **kwargs)
+            for element in soup.find_all(element, **kwargs):
+                found_elements.append(element.text.strip())
+            return found_elements
         else:
             self.logger.warn('OS3 webpage call returned nothing to search for')
             return None

@@ -2,33 +2,56 @@
 
 from argparse import ArgumentParser
 import logging
-from utils.logger import configure_logging
 from os import getenv
 from os.path import isfile
 from sys import argv
 
 from os3website import OS3Website
+from utils.logger import configure_logging
+from utils.filesystem import get_lines_from_file, write_lines_to_file
 
 MAX_WEBSITE_RETRIES = 3
 CLEANING_TASK_LIST_URL = 'https://www.os3.nl/2018-2019/students/playground/cleaning'
+logger = configure_logging(__name__)
 
 
 def parse_args(args=None):
-    parser = ArgumentParser(description='Make OS3 cleaning schedule - For clean coffee')
+    parser = ArgumentParser(description='Make OS3 cleaning schedule - For clean coffee. '
+                                        'Takes a list of students from a file or the OS3 website. '
+                                        'And randomly picks students for cleaning tasks gathered from the OS3 site')
 
+    parser.add_argument('students_file', help='A file with student names to pick from, '
+                                              'if empty a new list will be generated '
+                                              'and written to this location')
     parser.add_argument('-y', '--year', default='2018-2019', help='The current year of OS3 (default 2018-2019)')
     parser.add_argument('-d', '--debug', action='store_true', help='Debug messages')
 
     group = parser.add_mutually_exclusive_group()
     group.add_argument('-e', '--excluded-students', nargs='*', help='List of student to exclude (separated by spaces)')
-    group.add_argument('-f', '--excluded-students-file', help='A file of students to exclude (seprated by newlines)')
+    group.add_argument('-f', '--excluded-students-file', help='A file of students to exclude (separated by newlines)')
 
     return parser.parse_args(args)
 
 
+def get_student_list_from_website(website, debug=False):
+    for i in range(0, MAX_WEBSITE_RETRIES):
+        logger.info('Trying to get list of student from os3.nl')
+        students = website.get_all_students()
+        if students:
+            break
+        else:
+            logger.warning('Did not get any students from OS3 site')
+            if i == MAX_WEBSITE_RETRIES:
+                logger.critical('Max retries reached, giving up')
+                break
+            else:
+                logger.info('Trying again, attempt {} of {}'.format(i + 1, MAX_WEBSITE_RETRIES))
+    return students
+
+
 def main(args=None):
     args = parse_args(args)
-    logger = configure_logging(argv[0], logging.DEBUG if args.debug else logging.INFO)
+    logger.setLevel(logging.DEBUG if args.debug else logging.INFO)
 
     # Check if HTTP auth creds are present
     logger.debug('Validating environment')
@@ -43,29 +66,34 @@ def main(args=None):
 
     # Get a list of current students
     website = OS3Website(username, password, args.year)
-    for i in range(0, MAX_WEBSITE_RETRIES):
-        logger.info('Getting list of students')
-        students = website.get_all_students()
-        if students:
-            if args.debug:
-                logger.debug('Found {} students:'.format(len(students)))
-                print(students)
-            break
-        else:
-            logger.warning('Did not get any students from OS3 site')
-            if i == MAX_WEBSITE_RETRIES:
-                logger.critical('Max retries reached, giving up')
-                exit(10)
-            else:
-                logger.info('Trying again, attempt {} of {}'.format(i+1, MAX_WEBSITE_RETRIES))
+    website.set_log_level(logger.level)
+    students = []
 
+    # Check if we can get a list of student from file
+    if isfile(args.students_file):
+        logger.info('Found {}, retrieving student list'.format(args.students_file))
+        students = get_lines_from_file(args.students_file)
+        create_student_file = True if len(students) == 0 else False
+    else:
+        create_student_file = True
+
+    # Getting list of student from file not successful, scrape the OS3 site instead
+    if not isfile(args.students_file) or len(students) == 0:
+        logger.info(
+            'Student file {} is empty or non existent, getting list of student from os3.nl'.format(args.students_file)
+        )
+        students = get_student_list_from_website(website, args.debug)
+    if args.debug:
+        logger.debug('Found the following student list: {}'.format(students))
+    if not students:
+        logger.critical('Could not find any students!!!')
+        exit(10)
 
     # Remove students that operator asked to exclude
     if args.excluded_students_file:
         if isfile(args.excluded_students_file):
             logger.info('Excluding students from {}'.format(args.excluded_students_file))
-            with open(args.excluded_students_file, 'r') as fh:
-                students_to_exclude = fh.read().splitlines()
+            students_to_exclude = get_lines_from_file(args.excluded_students_file)
             logger.debug('Students to exclude: {}'.format(students_to_exclude))
         else:
             logger.error('{} is not a valid exclude file, ignoring...'.format(args.excluded_students_file))
@@ -84,8 +112,13 @@ def main(args=None):
                 'Tried to remove {} from student list, but person was not present in student list'.format(student)
             )
 
-    # TODO Remove debug print
-    print(students)
+    # Students_file should be created
+    if create_student_file:
+        logger.info('Writing list of students to {}'.format(args.students_file))
+        try:
+            write_lines_to_file(args.students_file, students)
+        except IOError as e:
+            logger.error('Could not write students to {}, got error: {}'.format(args.students_file, e))
 
     # Get de items of the cleaning page
     logger.info('Getting list of cleaning tasks')
@@ -101,8 +134,7 @@ def main(args=None):
                 logger.critical('Max retries reached, giving up')
                 exit(11)
             else:
-                logger.info('Trying again: attempt {} of {}'.format(i+1, MAX_WEBSITE_RETRIES))
-
+                logger.info('Trying again: attempt {} of {}'.format(i + 1, MAX_WEBSITE_RETRIES))
 
 
 if __name__ == '__main__':
