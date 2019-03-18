@@ -4,7 +4,7 @@ from argparse import ArgumentParser
 import logging
 from os import getenv
 from os.path import isfile
-from sys import argv
+from random import sample
 
 from os3website import OS3Website
 from utils.logger import configure_logging
@@ -25,6 +25,7 @@ def parse_args(args=None):
                                               'and written to this location')
     parser.add_argument('-y', '--year', default='2018-2019', help='The current year of OS3 (default 2018-2019)')
     parser.add_argument('-d', '--debug', action='store_true', help='Debug messages')
+    parser.add_argument('-s', '--students', type=int, default=2, help='Amount of students to pick (default 2)')
 
     group = parser.add_mutually_exclusive_group()
     group.add_argument('-e', '--excluded-students', nargs='*', help='List of student to exclude (separated by spaces)')
@@ -33,7 +34,8 @@ def parse_args(args=None):
     return parser.parse_args(args)
 
 
-def get_student_list_from_website(website, debug=False):
+def get_student_list_from_website(website):
+    students = []
     for i in range(0, MAX_WEBSITE_RETRIES):
         logger.info('Trying to get list of student from os3.nl')
         students = website.get_all_students()
@@ -48,6 +50,21 @@ def get_student_list_from_website(website, debug=False):
                 logger.info('Trying again, attempt {} of {}'.format(i + 1, MAX_WEBSITE_RETRIES))
     return students
 
+def get_cleaning_tasks_from_website(website):
+    cleaning_tasks = []
+    for i in range(0, MAX_WEBSITE_RETRIES):
+        logger.info('Getting list of cleaning tasks')
+        cleaning_tasks = website.get_elements_from_webpage(CLEANING_TASK_LIST_URL, "li", **{"class": "level1"})
+        if cleaning_tasks:
+            break
+        else:
+            logger.warning('Did not receive a list of cleaning tasks from OS3 site')
+            if i == MAX_WEBSITE_RETRIES:
+                logger.critical('Max retries reached, giving up')
+                break
+            else:
+                logger.info('Trying again: attempt {} of {}'.format(i + 1, MAX_WEBSITE_RETRIES))
+    return cleaning_tasks
 
 def main(args=None):
     args = parse_args(args)
@@ -82,12 +99,12 @@ def main(args=None):
         logger.info(
             'Student file {} is empty or non existent, getting list of student from os3.nl'.format(args.students_file)
         )
-        students = get_student_list_from_website(website, args.debug)
+        students = get_student_list_from_website(website)
+    if not students:
+        logger.critical('Could not find any students!')
+        exit(10)
     if args.debug:
         logger.debug('Found the following student list: {}'.format(students))
-    if not students:
-        logger.critical('Could not find any students!!!')
-        exit(10)
 
     # Remove students that operator asked to exclude
     if args.excluded_students_file:
@@ -121,20 +138,18 @@ def main(args=None):
             logger.error('Could not write students to {}, got error: {}'.format(args.students_file, e))
 
     # Get de items of the cleaning page
-    logger.info('Getting list of cleaning tasks')
-    for i in range(0, MAX_WEBSITE_RETRIES):
-        cleaning_tasks = website.get_elements_from_webpage(CLEANING_TASK_LIST_URL, "li", **{"class": "level1"})
-        if cleaning_tasks:
-            if args.debug:
-                logger.debug('Found the following cleaning tasks: {}'.format(cleaning_tasks))
-            break
-        else:
-            logger.warning('Did not receive a list of cleaning tasks from OS3 site')
-            if i == MAX_WEBSITE_RETRIES:
-                logger.critical('Max retries reached, giving up')
-                exit(11)
-            else:
-                logger.info('Trying again: attempt {} of {}'.format(i + 1, MAX_WEBSITE_RETRIES))
+    cleaning_tasks = get_cleaning_tasks_from_website(website)
+    if not cleaning_tasks:
+        logger.error('Could not find any cleaning tasks!')
+        logger.warning('Assuming os3.nl playground page is broken, continuing with empty task list')
+    if args.debug:
+        logger.debug('Found the following cleaning tasks: {}'.format(cleaning_tasks))
+
+    # Matching students to cleaning tasks
+    logger.info('Picking {} students from list')
+    picked_students = sample(students, args.students)
+    if args.debug:
+        logger.debug('Picked the following students: {}'.format(picked_students))
 
 
 if __name__ == '__main__':

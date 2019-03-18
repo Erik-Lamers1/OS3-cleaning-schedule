@@ -9,6 +9,7 @@ logger = configure_logging(__name__)
 class OS3Website(object):
     """
     Preform operations on the OS3 website
+    TODO: Would be better to use the XML RPC API for this, but that is disabled for security
     """
 
     def __init__(self, http_user, http_pass, year='2018-2019'):
