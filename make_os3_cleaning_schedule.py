@@ -4,7 +4,16 @@ from argparse import ArgumentParser
 import logging
 from os import getenv
 from os.path import isfile
+from re import match
 from random import sample
+from datetime import datetime
+
+import smtplib
+import jinja2
+from email.header import Header
+from email.utils import formataddr
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 
 from os3website import OS3Website
 from utils.logger import configure_logging
@@ -23,15 +32,36 @@ def parse_args(args=None):
     parser.add_argument('students_file', help='A file with student names to pick from, '
                                               'if empty a new list will be generated '
                                               'and written to this location')
+    parser.add_argument('email', help='The email address to send the cleaning schedule to')
     parser.add_argument('-y', '--year', default='2018-2019', help='The current year of OS3 (default 2018-2019)')
+
+    parser.add_argument('-c', '--cc', nargs='*', help='A list of CC address for the email (separated by spaces)')
     parser.add_argument('-d', '--debug', action='store_true', help='Debug messages')
     parser.add_argument('-s', '--students', type=int, default=2, help='Amount of students to pick (default 2)')
+    parser.add_argument('-u', '--user', default=getenv('OS3_HTTP_USER'),
+                        help='OS3 website username (default $OS3_HTTP_USER)')
+    parser.add_argument('-p', '--password', default=getenv('OS3_HTTP_PASS'),
+                        help='OS3 website password (default $OS3_HTTP_PASS)')
+    parser.add_argument('--keep-picked-students', action='store_true',
+                        help='Do not remove student from student list after picking')
+    parser.add_argument('--no-email', action='store_true', help='Do not email (use for debugging)')
 
     group = parser.add_mutually_exclusive_group()
     group.add_argument('-e', '--excluded-students', nargs='*', help='List of student to exclude (separated by spaces)')
     group.add_argument('-f', '--excluded-students-file', help='A file of students to exclude (separated by newlines)')
 
-    return parser.parse_args(args)
+    args = parser.parse_args(args)
+    # Check if HTTP auth creds are present
+    if not args.user:
+        parser.error('No user given and $OS3_HTTP_USER not set')
+    elif not args.password:
+        parser.error('No password given and $OS3_HTTP_PASS not set')
+
+    # Check for valid emails
+    if not verify_email_addresses(args.cc + [args.email]):
+        parser.error('Email addresses not valid!')
+
+    return args
 
 
 def get_student_list_from_website(website):
@@ -50,6 +80,7 @@ def get_student_list_from_website(website):
                 logger.info('Trying again, attempt {} of {}'.format(i + 1, MAX_WEBSITE_RETRIES))
     return students
 
+
 def get_cleaning_tasks_from_website(website):
     cleaning_tasks = []
     for i in range(0, MAX_WEBSITE_RETRIES):
@@ -66,23 +97,30 @@ def get_cleaning_tasks_from_website(website):
                 logger.info('Trying again: attempt {} of {}'.format(i + 1, MAX_WEBSITE_RETRIES))
     return cleaning_tasks
 
+
+def render_template(**kwargs):
+    template_loader = jinja2.FileSystemLoader(searchpath="./templates")
+    template_env = jinja2.Environment(loader=template_loader)
+    template_file = "this_weeks_cleaning_tasks.email.jn2"
+    template = template_env.get_template(template_file)
+    return template.render(**kwargs).encode('utf-8')
+
+
+def verify_email_addresses(addresses):
+    for email in addresses:
+        if not match('^[_a-z0-9-]+(\.[_a-z0-9-]+)*@[a-z0-9-]+(\.[a-z0-9-]+)*(\.[a-z]{2,4})$', email):
+            return False
+    return True
+
+
 def main(args=None):
     args = parse_args(args)
     logger.setLevel(logging.DEBUG if args.debug else logging.INFO)
-
-    # Check if HTTP auth creds are present
-    logger.debug('Validating environment')
-    password = getenv('OS3_HTTP_PASS')
-    if not password:
-        logger.critical('OS3_HTTP_PASS variable not set')
-        exit(1)
-    username = getenv('OS3_HTTP_USERNAME')
-    if not username:
-        logger.critical('OS3_HTTP_USERNAME variable not set')
-        exit(1)
+    logger.debug('Validating environment successful')
 
     # Get a list of current students
-    website = OS3Website(username, password, args.year)
+    logger.info('Connecting to OS3 website')
+    website = OS3Website(args.user, args.password, args.year)
     website.set_log_level(logger.level)
     students = []
 
@@ -129,14 +167,6 @@ def main(args=None):
                 'Tried to remove {} from student list, but person was not present in student list'.format(student)
             )
 
-    # Students_file should be created
-    if create_student_file:
-        logger.info('Writing list of students to {}'.format(args.students_file))
-        try:
-            write_lines_to_file(args.students_file, students)
-        except IOError as e:
-            logger.error('Could not write students to {}, got error: {}'.format(args.students_file, e))
-
     # Get de items of the cleaning page
     cleaning_tasks = get_cleaning_tasks_from_website(website)
     if not cleaning_tasks:
@@ -146,10 +176,43 @@ def main(args=None):
         logger.debug('Found the following cleaning tasks: {}'.format(cleaning_tasks))
 
     # Matching students to cleaning tasks
-    logger.info('Picking {} students from list')
+    logger.info('Picking {} students from list'.format(args.students))
     picked_students = sample(students, args.students)
     if args.debug:
         logger.debug('Picked the following students: {}'.format(picked_students))
+
+    # Removing picked students from student list
+    if not args.keep_picked_students:
+        logger.info('Removing picked students from remaining student list')
+        for student in picked_students:
+            try:
+                del students[student]
+            except KeyError:
+                logger.error('Trying to remove {} from student list failed!'.format(student))
+
+    # Students_file should be created or updated
+    if create_student_file or not args.keep_picked_students:
+        logger.info('Writing list of (remaining) students to {}'.format(args.students_file))
+        try:
+            write_lines_to_file(args.students_file, students)
+        except IOError as e:
+            logger.error('Could not write students to {}, got error: {}'.format(args.students_file, e))
+
+    logger.info('Rendering email template')
+    email_body = render_template(**{
+        'date': datetime.today().strftime('%d-%m-%Y'),
+        'cleaning_url': CLEANING_TASK_LIST_URL,
+        'students': picked_students,
+        'cleaning_tasks': cleaning_tasks,
+        'list_rotated': create_student_file
+    })
+    if args.debug or not args.no_email:
+        logger.debug('Printing rendered email')
+        print(email_body)
+
+    if not args.no_email:
+        logger.info('Sending email to {}'.format(args.email))
+
 
 
 if __name__ == '__main__':

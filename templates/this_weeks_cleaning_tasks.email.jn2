@@ -346,7 +346,24 @@
                         <p>This is the generated OS3 cleaning schedule for the week of {{ date }}</p>
                         <p>Please check {{ cleaning_url }} for all information about the clean coffee ideas.
                          And the reason why you all receive this email.</p>
-                        <p>Good luck! Hope it works.</p>
+
+                         <p>This weeks cleaning ladies are:</p>
+                         <ul>
+                         {% for student in students %}
+                         <li><b>{{ student }}</b></li>
+                         {% endfor %}
+
+                         <p>The following cleaning tasks should be performed each week:</p>
+                         <ul>
+                         {% for task in cleaning_tasks %}
+                         <li><b>{{ task }}</b></li>
+                         {% endfor %}
+
+                         {% if list_rotated %}
+                         <p>Heads up!<br/> The student list has been rotated.</p>
+                         {% endif %}
+
+                        <p>Good luck! Together we keep things clean :)</p>
                       </td>
                     </tr>
                   </table>
@@ -363,7 +380,7 @@
                 <tr>
                   <td class="content-block">
                     <span class="apple-link">This is an automated email, please do not reply.</span>
-                    <br> Don't like these emails? <a href="https://media2.giphy.com/media/lcaMlZmmMULMA/giphy.gif?cid=3640f6095c504ec236486a6f559e4f3b">Unsubscribe</a>.
+                    <br> Don't like these emails? <a href="https://www.youtube.com/watch?v=dQw4w9WgXcQ">Unsubscribe</a>.
                   </td>
                 </tr>
                 <tr>
