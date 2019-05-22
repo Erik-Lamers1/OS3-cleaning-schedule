@@ -1,3 +1,5 @@
+import smtplib
+import ssl
 from bs4 import BeautifulSoup
 
 from utils.logger import configure_logging
@@ -9,14 +11,14 @@ logger = configure_logging(__name__)
 class OS3Website(object):
     """
     Preform operations on the OS3 website
-    TODO: Would be better to use the XML RPC API for this, but that is disabled for security
+    Or send mails from smtp.os3.nl
     """
 
-    def __init__(self, http_user, http_pass, year='2018-2019'):
+    def __init__(self, user, password, year='2018-2019'):
         self.include_unknown_type = True
         self.exclude_playground = True
-        self.http_user = http_user
-        self.http_pass = http_pass
+        self.user = user
+        self.password = password
         self.year = year
         self.logger = logger
         self._url = 'https://www.os3.nl/{}/start'.format(self.year)
@@ -53,7 +55,7 @@ class OS3Website(object):
         if not self._is_os3_webpage(self._url):
             return students
 
-        webpage = get_webpage_with_auth(self._url, self.http_user, self.http_pass, self.logger)
+        webpage = get_webpage_with_auth(self._url, self.user, self.password, self.logger)
 
         soup = BeautifulSoup(webpage, "html.parser")
         for a in soup.find_all("a", href=True):
@@ -74,7 +76,7 @@ class OS3Website(object):
         if not self._is_os3_webpage(url):
             return None
         self.logger.debug('Getting {}'.format(url))
-        return get_webpage_with_auth(url, self.http_user, self.http_pass, self.logger)
+        return get_webpage_with_auth(url, self.user, self.password, self.logger)
 
     def get_elements_from_webpage(self, url, element, **kwargs):
         """
@@ -83,7 +85,7 @@ class OS3Website(object):
         :param element: str: The element to search for
         :return:
         """
-        webpage = get_webpage_with_auth(url, self.http_user, self.http_pass, self.logger)
+        webpage = get_webpage_with_auth(url, self.user, self.password, self.logger)
         found_elements = []
         if webpage:
             soup = BeautifulSoup(webpage, "html.parser")
@@ -93,3 +95,32 @@ class OS3Website(object):
         else:
             self.logger.warn('OS3 webpage call returned nothing to search for')
             return None
+
+    def send_email(self, sender, to_list, message):
+        """
+        Tries to send a email message via the OS3 SMTP server
+        :param message: The message to send
+        :return: True is successful / False is failure
+        """
+        self.logger.debug('Trying to connect to smtp.os3.nl')
+        try:
+            server = smtplib.SMTP('smtp.os3.nl', 587)
+        #ciphers = 'EECDH+AESGCM:EDH+AESGCM'
+        #context = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
+        #context.options |= ssl.OP_NO_SSLv2
+        #context.options |= ssl.OP_NO_SSLv3
+        #context.set_ciphers(ciphers)
+        #context.set_default_verify_paths()
+        #context.verify_mode = ssl.CERT_REQUIRED
+            if server.starttls()[0] != 220:
+                self.logger.error('Unable to STARTTLS')
+                return False
+            server.ehlo()
+            server.esmtp_features['auth'] = 'PLAIN LOGIN'
+            server.login(self.user, self.password)
+            server.sendmail(sender, to_list, message)
+            logger.debug('Successfully send email message')
+            return True
+        except Exception as e:
+            logger.error('Unable to send mail, got error: {}'.format(e))
+            return False

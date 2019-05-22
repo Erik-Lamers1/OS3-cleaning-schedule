@@ -8,10 +8,7 @@ from re import match
 from random import sample
 from datetime import datetime
 
-import smtplib
 import jinja2
-from email.header import Header
-from email.utils import formataddr
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
@@ -38,10 +35,10 @@ def parse_args(args=None):
     parser.add_argument('-c', '--cc', nargs='*', help='A list of CC address for the email (separated by spaces)')
     parser.add_argument('-d', '--debug', action='store_true', help='Debug messages')
     parser.add_argument('-s', '--students', type=int, default=2, help='Amount of students to pick (default 2)')
-    parser.add_argument('-u', '--user', default=getenv('OS3_HTTP_USER'),
-                        help='OS3 website username (default $OS3_HTTP_USER)')
-    parser.add_argument('-p', '--password', default=getenv('OS3_HTTP_PASS'),
-                        help='OS3 website password (default $OS3_HTTP_PASS)')
+    parser.add_argument('-u', '--user', default=getenv('OS3_USER'),
+                        help='OS3 username (default $OS3_USER)')
+    parser.add_argument('-p', '--password', default=getenv('OS3_PASS'),
+                        help='OS3 password (default $OS3_PASS)')
     parser.add_argument('--keep-picked-students', action='store_true',
                         help='Do not remove student from student list after picking')
     parser.add_argument('--no-email', action='store_true', help='Do not email (use for debugging)')
@@ -113,7 +110,20 @@ def verify_email_addresses(addresses):
     return True
 
 
+def make_email(to, subject, body, cc=None):
+    msg = MIMEMultipart('alternative')
+    msg['From'] = 'cleaning-schedule@os3.nl'
+    msg['Subject'] = subject
+    msg['To'] = [to]
+    if cc:
+        logger.info('Sending CC to {}'.format(', '.join(args.cc)))
+        msg['Cc'] = cc
+    msg.attach(MIMEText(body, 'html'))
+    return msg.as_string()
+
+
 def main(args=None):
+    date = datetime.today().strftime('%d-%m-%Y')
     args = parse_args(args)
     logger.setLevel(logging.DEBUG if args.debug else logging.INFO)
     logger.debug('Validating environment successful')
@@ -173,13 +183,13 @@ def main(args=None):
         logger.error('Could not find any cleaning tasks!')
         logger.warning('Assuming os3.nl playground page is broken, continuing with empty task list')
     if args.debug:
-        logger.debug('Found the following cleaning tasks: {}'.format(cleaning_tasks))
+        logger.debug('Found the following cleaning tasks: {}'.format(', '.join(cleaning_tasks)))
 
     # Matching students to cleaning tasks
     logger.info('Picking {} students from list'.format(args.students))
     picked_students = sample(students, args.students)
     if args.debug:
-        logger.debug('Picked the following students: {}'.format(picked_students))
+        logger.debug('Picked the following students: {}'.format(', '.join(picked_students)))
 
     # Removing picked students from student list
     if not args.keep_picked_students:
@@ -200,7 +210,7 @@ def main(args=None):
 
     logger.info('Rendering email template')
     email_body = render_template(**{
-        'date': datetime.today().strftime('%d-%m-%Y'),
+        'date': date,
         'cleaning_url': CLEANING_TASK_LIST_URL,
         'students': picked_students,
         'cleaning_tasks': cleaning_tasks,
@@ -212,7 +222,7 @@ def main(args=None):
 
     if not args.no_email:
         logger.info('Sending email to {}'.format(args.email))
-
+        message = make_email(args.email, 'OS3 cleaning schedule for the week of {}'.format(date), email_body, args.cc)
 
 
 if __name__ == '__main__':
