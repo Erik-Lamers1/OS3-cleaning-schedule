@@ -1,3 +1,0 @@
-# TEST LIST OF STUDENTS TO EXCLUDE
-Erik Lamers
-Tim de Boer
