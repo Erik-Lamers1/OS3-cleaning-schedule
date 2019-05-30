@@ -1,5 +1,4 @@
 import smtplib
-import ssl
 from bs4 import BeautifulSoup
 
 from utils.logger import configure_logging
@@ -113,7 +112,7 @@ class OS3Website(object):
         #context.set_default_verify_paths()
         #context.verify_mode = ssl.CERT_REQUIRED
             if server.starttls()[0] != 220:
-                self.logger.error('Unable to STARTTLS')
+                self.logger.error('SMTP ERROR: Unable to STARTTLS')
                 return False
             server.ehlo()
             server.esmtp_features['auth'] = 'PLAIN LOGIN'
@@ -122,5 +121,5 @@ class OS3Website(object):
             logger.debug('Successfully send email message')
             return True
         except Exception as e:
-            logger.error('Unable to send mail, got error: {}'.format(e))
+            logger.error('SMTP ERROR: {}'.format(e))
             return False

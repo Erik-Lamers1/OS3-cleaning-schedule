@@ -4,20 +4,20 @@ from argparse import ArgumentParser
 import logging
 from os import getenv
 from os.path import isfile
-from re import match
 from random import sample
 from datetime import datetime
 
 import jinja2
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+from email.utils import parseaddr
 
 from os3website import OS3Website
+from utils.development import print_html5
 from utils.logger import configure_logging
 from utils.filesystem import get_lines_from_file, write_lines_to_file
+from settings import EMAIL_TEMPLATE, CLEANING_TASK_LIST_URL, MAX_WEBSITE_RETRIES
 
-MAX_WEBSITE_RETRIES = 3
-CLEANING_TASK_LIST_URL = 'https://www.os3.nl/2018-2019/students/playground/cleaning'
 logger = configure_logging(__name__)
 
 
@@ -29,7 +29,6 @@ def parse_args(args=None):
     parser.add_argument('students_file', help='A file with student names to pick from, '
                                               'if empty a new list will be generated '
                                               'and written to this location')
-    parser.add_argument('email', help='The email address to send the cleaning schedule to')
     parser.add_argument('-y', '--year', default='2018-2019', help='The current year of OS3 (default 2018-2019)')
 
     parser.add_argument('-c', '--cc', nargs='*', help='A list of CC address for the email (separated by spaces)')
@@ -41,11 +40,16 @@ def parse_args(args=None):
                         help='OS3 password (default $OS3_PASS)')
     parser.add_argument('--keep-picked-students', action='store_true',
                         help='Do not remove student from student list after picking')
-    parser.add_argument('--no-email', action='store_true', help='Do not email (use for debugging)')
 
-    group = parser.add_mutually_exclusive_group()
-    group.add_argument('-e', '--excluded-students', nargs='*', help='List of student to exclude (separated by spaces)')
-    group.add_argument('-f', '--excluded-students-file', help='A file of students to exclude (separated by newlines)')
+    student_args_group = parser.add_mutually_exclusive_group()
+    student_args_group.add_argument('-x', '--excluded-students', nargs='*',
+                                    help='List of student to exclude (separated by spaces)')
+    student_args_group.add_argument('-f', '--excluded-students-file',
+                                    help='A file of students to exclude (separated by newlines)')
+
+    email_args_group = parser.add_mutually_exclusive_group(required=True)
+    email_args_group.add_argument('-e', '--email', help='The email address to send the cleaning schedule to')
+    email_args_group.add_argument('--no-email', action='store_true', help='Do not email (use for debugging)')
 
     args = parser.parse_args(args)
     # Check if HTTP auth creds are present
@@ -55,8 +59,12 @@ def parse_args(args=None):
         parser.error('No password given and $OS3_HTTP_PASS not set')
 
     # Check for valid emails
-    if not verify_email_addresses(args.cc + [args.email]):
+    if not args.no_email and not \
+            (verify_email_addresses([args.email]) or (args.cc and not verify_email_addresses(args.cc))):
         parser.error('Email addresses not valid!')
+
+    if args.no_email and args.cc:
+        logger.warning('CC email list given with no-email option enabled. Ignoring CC list.')
 
     return args
 
@@ -98,14 +106,14 @@ def get_cleaning_tasks_from_website(website):
 def render_template(**kwargs):
     template_loader = jinja2.FileSystemLoader(searchpath="./templates")
     template_env = jinja2.Environment(loader=template_loader)
-    template_file = "this_weeks_cleaning_tasks.email.jn2"
+    template_file = EMAIL_TEMPLATE
     template = template_env.get_template(template_file)
     return template.render(**kwargs).encode('utf-8')
 
 
 def verify_email_addresses(addresses):
     for email in addresses:
-        if not match('^[_a-z0-9-]+(\.[_a-z0-9-]+)*@[a-z0-9-]+(\.[a-z0-9-]+)*(\.[a-z]{2,4})$', email):
+        if '@' not in parseaddr(email)[1]:
             return False
     return True
 
@@ -114,10 +122,10 @@ def make_email(to, subject, body, cc=None):
     msg = MIMEMultipart('alternative')
     msg['From'] = 'cleaning-schedule@os3.nl'
     msg['Subject'] = subject
-    msg['To'] = [to]
+    msg['To'] = to
     if cc:
-        logger.info('Sending CC to {}'.format(', '.join(args.cc)))
-        msg['Cc'] = cc
+        logger.info('Sending CC to {}'.format(', '.join(cc)))
+        msg['Cc'] = ', '.join(cc)
     msg.attach(MIMEText(body, 'html'))
     return msg.as_string()
 
@@ -196,8 +204,8 @@ def main(args=None):
         logger.info('Removing picked students from remaining student list')
         for student in picked_students:
             try:
-                del students[student]
-            except KeyError:
+                students.remove(student)
+            except ValueError:
                 logger.error('Trying to remove {} from student list failed!'.format(student))
 
     # Students_file should be created or updated
@@ -218,11 +226,23 @@ def main(args=None):
     })
     if args.debug or not args.no_email:
         logger.debug('Printing rendered email')
-        print(email_body)
+        print_html5(email_body)
 
     if not args.no_email:
         logger.info('Sending email to {}'.format(args.email))
-        message = make_email(args.email, 'OS3 cleaning schedule for the week of {}'.format(date), email_body, args.cc)
+        message = make_email(
+            args.email,
+            'OS3 cleaning schedule for the week of {}'.format(date),
+            email_body.decode('utf-8'),
+            args.cc
+        )
+        if website.send_email('cleaning-schedule@os3.nl', args.cc.append(args.email) if args.cc else [args.email],
+                              message):
+            logger.info('Email sent')
+        else:
+            # Mail sending failed
+            logger.critical('Mail sending failed')
+            exit(255)
 
 
 if __name__ == '__main__':

@@ -335,6 +335,7 @@
 
             <!-- START CENTERED WHITE CONTAINER -->
             <table role="presentation" class="main">
+            <img src="https://www.os3.nl/lib/tpl/website//SNE-images/SNELogo.png" alt="System And Network Engineering [logo]" width="715" height="57">
 
               <!-- START MAIN CONTENT AREA -->
               <tr>
@@ -344,7 +345,7 @@
                       <td>
                         <p>Hi all,</p>
                         <p>This is the generated OS3 cleaning schedule for the week of {{ date }}</p>
-                        <p>Please check {{ cleaning_url }} for all information about the clean coffee ideas.
+                        <p>Please check {{ cleaning_url }} for all information about the clean coffee ideas. <br />
                          And the reason why you all receive this email.</p>
 
                          <p>This weeks cleaning ladies are:</p>
@@ -352,18 +353,20 @@
                          {% for student in students %}
                          <li><b>{{ student }}</b></li>
                          {% endfor %}
+                         </ul>
 
                          <p>The following cleaning tasks should be performed each week:</p>
                          <ul>
                          {% for task in cleaning_tasks %}
                          <li><b>{{ task }}</b></li>
                          {% endfor %}
+                         </ul>
 
                          {% if list_rotated %}
                          <p>Heads up!<br/> The student list has been rotated.</p>
                          {% endif %}
 
-                        <p>Good luck! Together we keep things clean :)</p>
+                        <p>Good luck! Together we keep the flies out.</p>
                       </td>
                     </tr>
                   </table>
@@ -379,13 +382,15 @@
               <table role="presentation" border="0" cellpadding="0" cellspacing="0">
                 <tr>
                   <td class="content-block">
-                    <span class="apple-link">This is an automated email, please do not reply.</span>
-                    <br> Don't like these emails? <a href="https://www.youtube.com/watch?v=dQw4w9WgXcQ">Unsubscribe</a>.
+                    <span class="apple-link">This is an automated email, please do not reply.
+                    <br/> Don't like these emails? <a href="https://www.youtube.com/watch?v=dQw4w9WgXcQ&wadsworth=1&modestbranding=1">Unsubscribe</a>.
+                    <br/> The code generating this is open source and can be reviewed <a href="https://github.com/Erik-Lamers1/OS3-cleaning-schedule">here</a>/
+                     </span>
                   </td>
                 </tr>
                 <tr>
                   <td class="content-block powered-by">
-                    Powered by<a href="https://os3.nl">OS3</a>.
+                    Powered by <a href="https://os3.nl">OS3</a> knowledge.
                   </td>
                 </tr>
               </table>
