@@ -7,7 +7,7 @@ from utils.networking import get_webpage_with_auth
 logger = configure_logging(__name__)
 
 
-class OS3Website(object):
+class OS3Website:
     """
     Preform operations on the OS3 website
     Or send mails from smtp.os3.nl
@@ -98,19 +98,14 @@ class OS3Website(object):
     def send_email(self, sender, to_list, message):
         """
         Tries to send a email message via the OS3 SMTP server
+        :param sender: str: The from address
+        :param to_list: list: All email addresses to send to
         :param message: The message to send
         :return: True is successful / False is failure
         """
         self.logger.debug('Trying to connect to smtp.os3.nl')
         try:
             server = smtplib.SMTP('smtp.os3.nl', 587)
-        #ciphers = 'EECDH+AESGCM:EDH+AESGCM'
-        #context = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
-        #context.options |= ssl.OP_NO_SSLv2
-        #context.options |= ssl.OP_NO_SSLv3
-        #context.set_ciphers(ciphers)
-        #context.set_default_verify_paths()
-        #context.verify_mode = ssl.CERT_REQUIRED
             if server.starttls()[0] != 220:
                 self.logger.error('SMTP ERROR: Unable to STARTTLS')
                 return False

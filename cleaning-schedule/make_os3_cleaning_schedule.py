@@ -7,16 +7,12 @@ from os.path import isfile
 from random import sample
 from datetime import datetime
 
-import jinja2
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
-from email.utils import parseaddr
-
 from os3website import OS3Website
+from mail import Mail
 from utils.development import print_html5
 from utils.logger import configure_logging
 from utils.filesystem import get_lines_from_file, write_lines_to_file
-from settings import EMAIL_TEMPLATE, CLEANING_TASK_LIST_URL, MAX_WEBSITE_RETRIES
+from settings import CLEANING_TASK_LIST_URL, MAX_WEBSITE_RETRIES
 
 logger = configure_logging(__name__)
 
@@ -59,8 +55,9 @@ def parse_args(args=None):
         parser.error('No password given and $OS3_HTTP_PASS not set')
 
     # Check for valid emails
+    mail = Mail()
     if not args.no_email and not \
-            (verify_email_addresses([args.email]) or (args.cc and not verify_email_addresses(args.cc))):
+            (mail.verify_email_addresses([args.email]) or (args.cc and not mail.verify_email_addresses(args.cc))):
         parser.error('Email addresses not valid!')
 
     if args.no_email and args.cc:
@@ -103,44 +100,17 @@ def get_cleaning_tasks_from_website(website):
     return cleaning_tasks
 
 
-def render_template(**kwargs):
-    template_loader = jinja2.FileSystemLoader(searchpath="./templates")
-    template_env = jinja2.Environment(loader=template_loader)
-    template_file = EMAIL_TEMPLATE
-    template = template_env.get_template(template_file)
-    return template.render(**kwargs).encode('utf-8')
-
-
-def verify_email_addresses(addresses):
-    for email in addresses:
-        if '@' not in parseaddr(email)[1]:
-            return False
-    return True
-
-
-def make_email(to, subject, body, cc=None):
-    msg = MIMEMultipart('alternative')
-    msg['From'] = 'cleaning-schedule@os3.nl'
-    msg['Subject'] = subject
-    msg['To'] = to
-    if cc:
-        logger.info('Sending CC to {}'.format(', '.join(cc)))
-        msg['Cc'] = ', '.join(cc)
-    msg.attach(MIMEText(body, 'html'))
-    return msg.as_string()
-
-
 def main(args=None):
+    students = []
+    email_body = ''
     date = datetime.today().strftime('%d-%m-%Y')
     args = parse_args(args)
     logger.setLevel(logging.DEBUG if args.debug else logging.INFO)
-    logger.debug('Validating environment successful')
+    logger.debug('Argument validation successful')
 
-    # Get a list of current students
     logger.info('Connecting to OS3 website')
     website = OS3Website(args.user, args.password, args.year)
-    website.set_log_level(logger.level)
-    students = []
+    website.set_log_level(logging.DEBUG if args.debug else logging.INFO)
 
     # Check if we can get a list of student from file
     if isfile(args.students_file):
@@ -217,20 +187,26 @@ def main(args=None):
             logger.error('Could not write students to {}, got error: {}'.format(args.students_file, e))
 
     logger.info('Rendering email template')
-    email_body = render_template(**{
-        'date': date,
-        'cleaning_url': CLEANING_TASK_LIST_URL,
-        'students': picked_students,
-        'cleaning_tasks': cleaning_tasks,
-        'list_rotated': create_student_file
-    })
+    mail = Mail()
+    mail.set_log_level(logging.DEBUG if args.debug else logging.INFO)
+    try:
+        email_body = mail.render_template(**{
+            'date': date,
+            'cleaning_url': CLEANING_TASK_LIST_URL,
+            'students': picked_students,
+            'cleaning_tasks': cleaning_tasks,
+            'list_rotated': create_student_file
+        })
+    except Exception as e:
+        logger.critical('Unable to render email template, got error: {}'.format(e))
+        exit(255)
     if args.debug or not args.no_email:
         logger.debug('Printing rendered email')
         print_html5(email_body)
 
     if not args.no_email:
         logger.info('Sending email to {}'.format(args.email))
-        message = make_email(
+        message = mail.make_email(
             args.email,
             'OS3 cleaning schedule for the week of {}'.format(date),
             email_body.decode('utf-8'),
