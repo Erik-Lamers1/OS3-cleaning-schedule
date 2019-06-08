@@ -7,12 +7,12 @@ from os.path import isfile
 from random import sample
 from datetime import datetime
 
-from os3website import OS3Website
-from mail import Mail
-from utils.development import print_html5
-from utils.logger import configure_logging
-from utils.filesystem import get_lines_from_file, write_lines_to_file
-from settings import CLEANING_TASK_LIST_URL, MAX_WEBSITE_RETRIES
+from cleaning_schedule.os3website import OS3Website
+from cleaning_schedule.mail import Mail
+from cleaning_schedule.utils.development import print_html5
+from cleaning_schedule.utils.logger import configure_logging
+from cleaning_schedule.utils.filesystem import get_lines_from_file, write_lines_to_file
+from cleaning_schedule.settings import CLEANING_TASK_LIST_URL, MAX_WEBSITE_RETRIES
 
 """
 This program tries to achieve randomized picking of students,

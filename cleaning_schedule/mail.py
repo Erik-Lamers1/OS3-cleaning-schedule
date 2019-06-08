@@ -2,9 +2,9 @@ import jinja2
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from email.utils import parseaddr
-from utils.logger import configure_logging
 
-from settings import EMAIL_TEMPLATE
+from cleaning_schedule.utils.logger import configure_logging
+from cleaning_schedule.settings import EMAIL_TEMPLATE
 
 logger = configure_logging(__name__)
 

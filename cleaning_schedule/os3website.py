@@ -1,8 +1,8 @@
 import smtplib
 from bs4 import BeautifulSoup
 
-from utils.logger import configure_logging
-from utils.networking import get_webpage_with_auth
+from cleaning_schedule.utils.logger import configure_logging
+from cleaning_schedule.utils.networking import get_webpage_with_auth
 
 logger = configure_logging(__name__)
 

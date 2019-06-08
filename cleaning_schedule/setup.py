@@ -7,7 +7,7 @@ setuptools.setup(
     author_email='erik.lamers@os3.nl',
     description='OS3 cleaning schedule for clean coffee',
     url="https://github.com/Erik-Lamers1/OS3-cleaning-schedule",
-    packages=setuptools.find_packages(),
+    packages=setuptools.find_packages(exclude=['tests', 'tests.*']),
     classifiers=[
         'Programming Language :: Python :: 3',
     ],
