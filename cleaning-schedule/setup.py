@@ -10,5 +10,10 @@ setuptools.setup(
     packages=setuptools.find_packages(),
     classifiers=[
         'Programming Language :: Python :: 3',
+    ],
+    install_requires=[
+        'requests',
+        'beautifulsoup4',
+        'jinja2',
     ]
 )

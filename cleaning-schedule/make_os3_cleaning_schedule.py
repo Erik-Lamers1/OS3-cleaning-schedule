@@ -14,6 +14,13 @@ from utils.logger import configure_logging
 from utils.filesystem import get_lines_from_file, write_lines_to_file
 from settings import CLEANING_TASK_LIST_URL, MAX_WEBSITE_RETRIES
 
+"""
+This program tries to achieve randomized picking of students,
+and assign them to the different cleaning tasks that should be preformed at OS3 each week.
+
+Author: Erik Lamers
+"""
+
 logger = configure_logging(__name__)
 
 
