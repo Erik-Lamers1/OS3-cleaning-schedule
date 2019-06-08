@@ -1,0 +1,10 @@
+version: 2
+
+jobs:
+  build:
+    working_directory: ~/OS3-cleaning-schedule
+    docker:
+      - image: themattrix/tox
+    steps:
+      - checkout
+      - run: tox
