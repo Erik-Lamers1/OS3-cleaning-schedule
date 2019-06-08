@@ -7,9 +7,11 @@ and assign them to the different cleaning tasks that should be preformed at OS3 
 An email is send to the specified email address with the results  
 
 Python3 only project!
-###Entrypoint
+
+### Entrypoint
+
 `OS3-cleaning-schedule/make_os3_cleaning_schedule.py --help`
-```python
+```
 usage: make_os3_cleaning_schedule.py [-h] [-y YEAR] [-c [CC [CC ...]]] [-d]
                                      [-s STUDENTS] [-u USER] [-p PASSWORD]
                                      [--keep-picked-students]
@@ -49,7 +51,8 @@ optional arguments:
   --no-email            Do not email (use for debugging)
 ```
 
-###Running the tests
+### Running the tests
+
 ```angular2
 pip3 install -r requirements/development.txt
 tox
