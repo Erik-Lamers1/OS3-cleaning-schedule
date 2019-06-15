@@ -10,7 +10,7 @@ from tempfile import NamedTemporaryFile
 import os
 
 
-class CaptureStdoutStderrMixIn:
+class CaptureSysStreamsMixin(object):
     sys_stdout = None
     sys_stderr = None
     stdout = None
@@ -30,8 +30,39 @@ class CaptureStdoutStderrMixIn:
         sys.stdout = self.sys_stdout
         sys.stderr = self.sys_stderr
 
+
+class SysStreamTestCaseMixin(CaptureSysStreamsMixin):
+    def capture_auto_restore_sys_streams(self):
+        self.capture_sys_streams()
+        self.addCleanup(self.restore_sys_streams)
+
+    def setUp(self):
+        super(SysStreamTestCaseMixin, self).setUp()
+        self.capture_auto_restore_sys_streams()
+
+    def tearDown(self):
+        super(SysStreamTestCaseMixin, self).tearDown()
         self.stdout.close()
         self.stderr.close()
+
+    def assertPrintRegexp(self, message):
+        self.assertRegex(self.stdout.getvalue(), message)
+
+    def assertPrintRegexpAndExitOK(self, pattern, func, *args, **kwargs):
+        with self.assertRaises(SystemExit) as exp:
+            func(*args, **kwargs)
+        self.assertEqual(exp.exception.code, EX_OK)
+        self.assertPrintRegexp(pattern)
+        self.assertNoPrintError()
+
+    def assertNoPrint(self):
+        self.assertEqual(self.stdout.getvalue(), '')
+
+    def assertPrintErrorRegexp(self, message):
+        self.assertRegex(self.stderr.getvalue(), message)
+
+    def assertNoPrintError(self):
+        self.assertEqual(self.stderr.getvalue(), '')
 
 
 class HasTempFileTestCaseMixIn(object):

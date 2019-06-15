@@ -14,7 +14,6 @@ class OS3Website:
     """
 
     def __init__(self, user, password, year='2018-2019'):
-        self.include_unknown_type = True
         self.exclude_playground = True
         self.user = user
         self.password = password
@@ -30,19 +29,21 @@ class OS3Website:
         """
         self.logger.setLevel(level)
 
-    def _is_os3_webpage(self, url):
+    def is_os3_webpage(self, url):
         """
         Checks if URL is actually an os3.nl URL, only when _must_be_os3 is set to false will it pass on non os3.nl
         :param url: The URL
         :return: True if os3.nl or _must_be_os3 == False else False
         """
-        if 'os3.nl' in url.lower():
+        if url.split('/')[0].lower().endswith('os3.nl'):
             return True
         elif not self._must_be_os3:
-            self.logger.info('{} is not a OS3 url, But exception is accepted for this instance')
+            self.logger.info('{} is not a OS3 url, But exception is accepted for this instance'.format(url))
             return True
         else:
-            self.logger.critical('{} is not a OS3 url, we do not want to give your credentials to some random site!')
+            self.logger.critical(
+                '{} is not a OS3 url, we do not want to give your credentials to some random site!'.format(url)
+            )
             return False
 
     def get_all_students(self):
@@ -51,7 +52,7 @@ class OS3Website:
         :return: list: student names
         """
         students = []
-        if not self._is_os3_webpage(self._url):
+        if not self.is_os3_webpage(self._url):
             return students
 
         webpage = get_webpage_with_auth(self._url, self.user, self.password, self.logger)
@@ -72,7 +73,7 @@ class OS3Website:
         :param url: The URL to get
         :return: str: The URLs content
         """
-        if not self._is_os3_webpage(url):
+        if not self.is_os3_webpage(url):
             return None
         self.logger.debug('Getting {}'.format(url))
         return get_webpage_with_auth(url, self.user, self.password, self.logger)
