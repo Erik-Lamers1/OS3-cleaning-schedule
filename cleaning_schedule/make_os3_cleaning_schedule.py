@@ -33,8 +33,6 @@ def parse_args(args=None):
                                               'if empty a new list will be generated '
                                               'and written to this location')
     parser.add_argument('-y', '--year', default='2018-2019', help='The current year of OS3 (default 2018-2019)')
-
-    parser.add_argument('-c', '--cc', nargs='*', help='A list of CC address for the email (separated by spaces)')
     parser.add_argument('-d', '--debug', action='store_true', help='Debug messages')
     parser.add_argument('-s', '--students', type=int, default=2, help='Amount of students to pick (default 2)')
     parser.add_argument('-u', '--user', default=getenv('OS3_USER'),
@@ -44,13 +42,21 @@ def parse_args(args=None):
     parser.add_argument('--keep-picked-students', action='store_true',
                         help='Do not remove student from student list after picking')
 
-    student_args_group = parser.add_mutually_exclusive_group()
+    excluded_group = parser.add_argument_group('Exclusion actions',
+                                               'Students to exclude, append either to file or to a '
+                                               'list when a student is no longer able to preform '
+                                               'cleaning tasks')
+    student_args_group = excluded_group.add_mutually_exclusive_group()
     student_args_group.add_argument('-x', '--excluded-students', nargs='*',
                                     help='List of student to exclude (separated by spaces)')
     student_args_group.add_argument('-f', '--excluded-students-file',
                                     help='A file of students to exclude (separated by newlines)')
 
-    email_args_group = parser.add_mutually_exclusive_group(required=True)
+    email_actions = parser.add_argument_group('Email actions',
+                                              'Either choose to send no email or '
+                                              'add a emails to send to (required)')
+    email_actions.add_argument('-c', '--cc', nargs='*', help='A list of CC address for the email (separated by spaces)')
+    email_args_group = email_actions.add_mutually_exclusive_group(required=True)
     email_args_group.add_argument('-e', '--email', help='The email address to send the cleaning schedule to')
     email_args_group.add_argument('--no-email', action='store_true', help='Do not email (use for debugging)')
 

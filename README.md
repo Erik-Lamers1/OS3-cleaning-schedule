@@ -12,11 +12,12 @@ Python3 only project!
 
 `OS3-cleaning-schedule/make_os3_cleaning_schedule.py --help`
 ```
-usage: make_os3_cleaning_schedule.py [-h] [-y YEAR] [-c [CC [CC ...]]] [-d]
-                                     [-s STUDENTS] [-u USER] [-p PASSWORD]
+usage: make_os3_cleaning_schedule.py [-h] [-y YEAR] [-d] [-s STUDENTS]
+                                     [-u USER] [-p PASSWORD]
                                      [--keep-picked-students]
                                      [-x [EXCLUDED_STUDENTS [EXCLUDED_STUDENTS ...]]
                                      | -f EXCLUDED_STUDENTS_FILE]
+                                     [-c [CC [CC ...]]]
                                      (-e EMAIL | --no-email)
                                      students_file
 
@@ -31,9 +32,6 @@ positional arguments:
 optional arguments:
   -h, --help            show this help message and exit
   -y YEAR, --year YEAR  The current year of OS3 (default 2018-2019)
-  -c [CC [CC ...]], --cc [CC [CC ...]]
-                        A list of CC address for the email (separated by
-                        spaces)
   -d, --debug           Debug messages
   -s STUDENTS, --students STUDENTS
                         Amount of students to pick (default 2)
@@ -42,10 +40,22 @@ optional arguments:
                         OS3 password (default $OS3_PASS)
   --keep-picked-students
                         Do not remove student from student list after picking
+
+Exclusion actions:
+  Students to exclude, append either to file or to a list when a student is
+  no longer able to preform cleaning tasks
+
   -x [EXCLUDED_STUDENTS [EXCLUDED_STUDENTS ...]], --excluded-students [EXCLUDED_STUDENTS [EXCLUDED_STUDENTS ...]]
                         List of student to exclude (separated by spaces)
   -f EXCLUDED_STUDENTS_FILE, --excluded-students-file EXCLUDED_STUDENTS_FILE
                         A file of students to exclude (separated by newlines)
+
+Email actions:
+  Either choose to send no email or add a emails to send to (required)
+
+  -c [CC [CC ...]], --cc [CC [CC ...]]
+                        A list of CC address for the email (separated by
+                        spaces)
   -e EMAIL, --email EMAIL
                         The email address to send the cleaning schedule to
   --no-email            Do not email (use for debugging)
