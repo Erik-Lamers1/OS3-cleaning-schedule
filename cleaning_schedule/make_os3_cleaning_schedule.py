@@ -12,7 +12,7 @@ from cleaning_schedule.mail import Mail
 from cleaning_schedule.utils.development import print_html5
 from cleaning_schedule.utils.logger import configure_logging
 from cleaning_schedule.utils.filesystem import get_lines_from_file, write_lines_to_file
-from cleaning_schedule.settings import CLEANING_TASK_LIST_URL, MAX_WEBSITE_RETRIES
+from cleaning_schedule.settings.base import CLEANING_TASK_LIST_URL, MAX_WEBSITE_RETRIES
 
 """
 This program tries to achieve randomized picking of students,
@@ -74,6 +74,11 @@ def parse_args(args=None):
 
 
 def get_student_list_from_website(website):
+    """
+    Curl the OS3 year info website to get a list of students.
+    :param website: OS3 website class object
+    :return: list: students
+    """
     students = []
     for i in range(0, MAX_WEBSITE_RETRIES):
         logger.info('Trying to get list of student from os3.nl')
@@ -91,6 +96,11 @@ def get_student_list_from_website(website):
 
 
 def get_cleaning_tasks_from_website(website):
+    """
+    Curl the OS3 CLEANING_TASK_LIST_URL to get a list of cleaning tasks.
+    :param website: OS3 website class object
+    :return: list: Cleaning tasks
+    """
     cleaning_tasks = []
     for i in range(0, MAX_WEBSITE_RETRIES):
         logger.info('Getting list of cleaning tasks')
@@ -123,12 +133,12 @@ def main(args=None):
     if isfile(args.students_file):
         logger.info('Found {}, retrieving student list'.format(args.students_file))
         students = get_lines_from_file(args.students_file)
-        create_student_file = True if len(students) == 0 else False
+        create_student_file = True if len(students) < args.students else False
     else:
         create_student_file = True
 
     # Getting list of student from file not successful, scrape the OS3 site instead
-    if not isfile(args.students_file) or len(students) == 0:
+    if not isfile(args.students_file) or len(students) < args.students:
         logger.info(
             'Student file {} is empty or non existent, getting list of student from os3.nl'.format(args.students_file)
         )
@@ -207,7 +217,7 @@ def main(args=None):
     except Exception as e:
         logger.critical('Unable to render email template, got error: {}'.format(e))
         exit(255)
-    if args.debug or not args.no_email:
+    if args.debug or args.no_email:
         logger.debug('Printing rendered email')
         print_html5(email_body)
 

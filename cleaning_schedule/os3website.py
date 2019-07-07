@@ -2,7 +2,7 @@ import smtplib
 from bs4 import BeautifulSoup
 
 from cleaning_schedule.utils.logger import configure_logging
-from cleaning_schedule.utils.networking import get_webpage_with_auth
+from cleaning_schedule.utils.networking import get_webpage_with_auth, https_in_url
 
 logger = configure_logging(__name__)
 
@@ -32,18 +32,26 @@ class OS3Website:
     def is_os3_webpage(self, url):
         """
         Checks if URL is actually an os3.nl URL, only when _must_be_os3 is set to false will it pass on non os3.nl
+        Also checks if URL startswith https
         :param url: The URL
         :return: True if os3.nl or _must_be_os3 == False else False
         """
-        if url.split('/')[0].lower().endswith('os3.nl'):
-            return True
-        elif not self._must_be_os3:
-            self.logger.info('{} is not a OS3 url, But exception is accepted for this instance'.format(url))
-            return True
-        else:
-            self.logger.critical(
-                '{} is not a OS3 url, we do not want to give your credentials to some random site!'.format(url)
-            )
+        if not https_in_url(url):
+            logger.critical('{} url does not start with https, failing to ensure we don\'t leak information')
+            return False
+        try:
+            if url.split('/')[2].lower().endswith('os3.nl'):
+                return True
+            elif not self._must_be_os3:
+                self.logger.info('{} is not a OS3 url, But exception is accepted for this instance'.format(url))
+                return True
+            else:
+                self.logger.critical(
+                    '{} is not a OS3 url, we do not want to give your credentials to some random site!'.format(url)
+                )
+                return False
+        except IndexError:
+            self.logger.error('Could not parse {}, are you using https://?'.format(url))
             return False
 
     def get_all_students(self):

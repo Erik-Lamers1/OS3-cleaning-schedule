@@ -4,7 +4,7 @@ from email.mime.multipart import MIMEMultipart
 from email.utils import parseaddr
 
 from cleaning_schedule.utils.logger import configure_logging
-from cleaning_schedule.settings import EMAIL_TEMPLATE
+from cleaning_schedule.settings.base import EMAIL_TEMPLATE
 
 logger = configure_logging(__name__)
 
@@ -63,6 +63,7 @@ class Mail:
         :param cc: list: The email addresses to included as CC's
         :return: str: The formatted MIME email message
         """
+        self.logger.debug('Constructing MIME email message')
         msg = MIMEMultipart('alternative')
         msg['From'] = self.from_address
         msg['Subject'] = subject

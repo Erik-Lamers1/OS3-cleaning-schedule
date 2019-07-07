@@ -1,11 +1,13 @@
 <!doctype html>
 <!--Source: https://www.leemunroe.com/responsive-html-email-template/ -->
 <html>
+  <!-- He there! Welcome in the machine room -->
   <head>
     <meta name="viewport" content="width=device-width" />
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
     <title>OS3 cleaning schedule for {{ date }}</title>
     <style>
+       /* Let's apply some makeup */
       /* -------------------------------------
           GLOBAL RESETS
       ------------------------------------- */
@@ -322,7 +324,7 @@
           border-color: #34495e !important;
         }
       }
-
+      /* End of makeup */
     </style>
   </head>
   <body class="">
@@ -345,8 +347,6 @@
                       <td>
                         <p>Hi all,</p>
                         <p>This is the generated OS3 cleaning schedule for the week of {{ date }}</p>
-                        <p>Please check {{ cleaning_url }} for all information about the clean coffee ideas. <br />
-                         And the reason why you all receive this email.</p>
 
                          <p>This weeks cleaning ladies are:</p>
                          <ul>
@@ -366,6 +366,9 @@
                          <p>Heads up!<br/> The student list has been rotated.</p>
                          {% endif %}
 
+                          <p>Please check {{ cleaning_url }} for more information. <br />
+                         And the reason why you receive this email.</p>
+
                         <p>Good luck! Together we keep the flies out.</p>
                       </td>
                     </tr>
@@ -383,8 +386,8 @@
                 <tr>
                   <td class="content-block">
                     <span class="apple-link">This is an automated email, please do not reply.
-                    <br/> Don't like these emails? <a href="https://www.youtube.com/watch?v=dQw4w9WgXcQ&wadsworth=1&modestbranding=1">Unsubscribe</a>.
-                    <br/> The code generating this is open source and can be reviewed <a href="https://github.com/Erik-Lamers1/OS3-cleaning-schedule">here</a>/
+                    <br/> Don't like these emails? <a href="https://youtu.be/dQw4w9WgXcQ?wadsworth=1&modestbranding=1">Unsubscribe</a>.
+                    <br/> The code generating this is open source and can be reviewed <a href="https://github.com/Erik-Lamers1/OS3-cleaning-schedule">here</a>
                      </span>
                   </td>
                 </tr>
@@ -403,4 +406,5 @@
       </tr>
     </table>
   </body>
+  <!-- Wow still here? You must really like it ;) -->
 </html>

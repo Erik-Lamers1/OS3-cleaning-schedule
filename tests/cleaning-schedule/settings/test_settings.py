@@ -1,7 +1,7 @@
 from tests import MyTestCase
 from os.path import isfile
 
-from cleaning_schedule.settings import MAX_WEBSITE_RETRIES, CLEANING_TASK_LIST_URL, EMAIL_TEMPLATE
+from cleaning_schedule.settings.base import MAX_WEBSITE_RETRIES, CLEANING_TASK_LIST_URL, EMAIL_TEMPLATE
 
 
 class TestSettings(MyTestCase):
