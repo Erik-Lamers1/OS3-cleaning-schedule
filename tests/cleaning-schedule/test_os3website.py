@@ -1,12 +1,12 @@
-from tests import MyTestCase, SysStreamTestCaseMixin
+from tests import SysStreamCapturingTestCase
 from logging import WARNING
 
 from cleaning_schedule.os3website import OS3Website
 
 
-class TestOS3Website(SysStreamTestCaseMixin, MyTestCase):
+class TestOS3Website(SysStreamCapturingTestCase):
     def setUp(self):
-        super(TestOS3Website, self).setUp()
+        self.capture_sys_streams()
         self.year = '2019-2020'
         self.get_call = self.set_up_patch('cleaning_schedule.os3website.get_webpage_with_auth')
         self.os3website = OS3Website('henk', 'henkpw', self.year)
@@ -45,8 +45,7 @@ class TestOS3Website(SysStreamTestCaseMixin, MyTestCase):
     def test_that_is_os3_website_return_false_if_os3_nl_in_url_even_when_no_slash_present(self):
         self.assertFalse(self.os3website.is_os3_webpage('blaap.nl'))
 
-    # TODO: Fix stdout capture
-    #def test_that_critical_message_is_logged_when_is_os3_nl_webpage_fails(self):
-    #    self.os3website.is_os3_webpage('blaap.nl')
-    #    self.assertPrintErrorRegexp('cleaning_schedule.os3website CRITICAL {} is not a OS3 url, '
-    #                           'we do not want to give your credentials to some random site!'.format('blaap.nl'))
+    def test_that_critical_message_is_logged_when_is_os3_nl_webpage_fails(self):
+        self.os3website.is_os3_webpage('blaap.nl')
+        self.assertPrintRegex('cleaning_schedule.os3website CRITICAL {} is not a OS3 url, '
+                              'we do not want to give your credentials to some random site!'.format('blaap.nl'))

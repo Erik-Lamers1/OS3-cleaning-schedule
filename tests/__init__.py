@@ -9,6 +9,24 @@ import unittest
 from tempfile import NamedTemporaryFile
 import os
 
+class MyTestCase(unittest.TestCase):
+    def set_up_patch(self, topatch, themock=None, **kwargs):
+        """Patch a function or class
+
+        :param topatch: string The class to patch
+        :param themock: optional object to use as mock
+        :return: mocked object
+        """
+        if themock is None:
+            themock = Mock()
+
+        if "return_value" in kwargs:
+            themock.return_value = kwargs["return_value"]
+
+        patcher = patch(topatch, themock)
+        self.addCleanup(patcher.stop)
+        return patcher.start()
+
 
 class CaptureSysStreamsMixin(object):
     sys_stdout = None
@@ -31,34 +49,26 @@ class CaptureSysStreamsMixin(object):
         sys.stderr = self.sys_stderr
 
 
-class SysStreamTestCaseMixin(CaptureSysStreamsMixin):
-    def capture_auto_restore_sys_streams(self):
-        self.capture_sys_streams()
-        self.addCleanup(self.restore_sys_streams)
+class SysStreamCapturingTestCase(CaptureSysStreamsMixin, MyTestCase):
+    def capture_sys_streams(self, auto_restore=True):
+        CaptureSysStreamsMixin.capture_sys_streams(self)
+        if auto_restore:
+            self.addCleanup(self.restore_sys_streams)
 
-    def setUp(self):
-        super(SysStreamTestCaseMixin, self).setUp()
-        self.capture_auto_restore_sys_streams()
-
-    def tearDown(self):
-        super(SysStreamTestCaseMixin, self).tearDown()
-        self.stdout.close()
-        self.stderr.close()
-
-    def assertPrintRegexp(self, message):
+    def assertPrintRegex(self, message):
         self.assertRegex(self.stdout.getvalue(), message)
 
-    def assertPrintRegexpAndExitOK(self, pattern, func, *args, **kwargs):
+    def assertPrintRegexAndExitOK(self, pattern, func, args):
         with self.assertRaises(SystemExit) as exp:
-            func(*args, **kwargs)
-        self.assertEqual(exp.exception.code, EX_OK)
-        self.assertPrintRegexp(pattern)
+            func(args)
+        self.assertEqual(exp.exception.code, os.EX_OK)
+        self.assertPrintRegex(pattern)
         self.assertNoPrintError()
 
     def assertNoPrint(self):
         self.assertEqual(self.stdout.getvalue(), '')
 
-    def assertPrintErrorRegexp(self, message):
+    def assertPrintErrorRegex(self, message):
         self.assertRegex(self.stderr.getvalue(), message)
 
     def assertNoPrintError(self):
@@ -91,22 +101,3 @@ class HasTempFileTestCaseMixIn(object):
 
     def tearDown(self):
         self._clear_temp_file()
-
-
-class MyTestCase(unittest.TestCase):
-    def set_up_patch(self, topatch, themock=None, **kwargs):
-        """Patch a function or class
-
-        :param topatch: string The class to patch
-        :param themock: optional object to use as mock
-        :return: mocked object
-        """
-        if themock is None:
-            themock = Mock()
-
-        if "return_value" in kwargs:
-            themock.return_value = kwargs["return_value"]
-
-        patcher = patch(topatch, themock)
-        self.addCleanup(patcher.stop)
-        return patcher.start()
