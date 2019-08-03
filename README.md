@@ -10,7 +10,7 @@ Python3 only project!
 
 ### Entrypoint
 
-`OS3-cleaning-schedule/make_os3_cleaning_schedule.py --help`
+`cleaning-schedule/make_os3_cleaning_schedule.py --help`
 ```
 usage: make_os3_cleaning_schedule.py [-h] [-y YEAR] [-d] [-s STUDENTS]
                                      [-u USER] [-p PASSWORD]
