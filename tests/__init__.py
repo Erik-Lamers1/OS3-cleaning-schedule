@@ -28,53 +28,6 @@ class MyTestCase(unittest.TestCase):
         return patcher.start()
 
 
-class CaptureSysStreamsMixin(object):
-    sys_stdout = None
-    sys_stderr = None
-    stdout = None
-    stderr = None
-
-    def capture_sys_streams(self):
-        self.sys_stdout = sys.stdout
-        self.sys_stderr = sys.stderr
-
-        self.stdout = StringIO()
-        self.stderr = StringIO()
-
-        sys.stdout = self.stdout
-        sys.stderr = self.stderr
-
-    def restore_sys_streams(self):
-        sys.stdout = self.sys_stdout
-        sys.stderr = self.sys_stderr
-
-
-class SysStreamCapturingTestCase(CaptureSysStreamsMixin, MyTestCase):
-    def capture_sys_streams(self, auto_restore=True):
-        CaptureSysStreamsMixin.capture_sys_streams(self)
-        if auto_restore:
-            self.addCleanup(self.restore_sys_streams)
-
-    def assertPrintRegex(self, message):
-        self.assertRegex(self.stdout.getvalue(), message)
-
-    def assertPrintRegexAndExitOK(self, pattern, func, args):
-        with self.assertRaises(SystemExit) as exp:
-            func(args)
-        self.assertEqual(exp.exception.code, os.EX_OK)
-        self.assertPrintRegex(pattern)
-        self.assertNoPrintError()
-
-    def assertNoPrint(self):
-        self.assertEqual(self.stdout.getvalue(), '')
-
-    def assertPrintErrorRegex(self, message):
-        self.assertRegex(self.stderr.getvalue(), message)
-
-    def assertNoPrintError(self):
-        self.assertEqual(self.stderr.getvalue(), '')
-
-
 class HasTempFileTestCaseMixIn(object):
     temp_file = None
     temp_file_path = ''

@@ -101,7 +101,7 @@ class OS3Website:
                 found_elements.append(element.text.strip())
             return found_elements
         else:
-            self.logger.warn('OS3 webpage call returned nothing to search for')
+            self.logger.warning('OS3 webpage call returned nothing to search for')
             return None
 
     def send_email(self, sender, to_list, message):
@@ -122,8 +122,8 @@ class OS3Website:
             server.esmtp_features['auth'] = 'PLAIN LOGIN'
             server.login(self.user, self.password)
             server.sendmail(sender, to_list, message)
-            logger.debug('Successfully send email message')
+            self.logger.debug('Successfully send email message')
             return True
         except Exception as e:
-            logger.error('SMTP ERROR: {}'.format(e))
+            self.logger.error('SMTP ERROR: {}'.format(e))
             return False
