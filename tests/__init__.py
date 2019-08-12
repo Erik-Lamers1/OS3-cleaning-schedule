@@ -9,6 +9,7 @@ import unittest
 from tempfile import NamedTemporaryFile
 import os
 
+
 class MyTestCase(unittest.TestCase):
     def set_up_patch(self, topatch, themock=None, **kwargs):
         """Patch a function or class
