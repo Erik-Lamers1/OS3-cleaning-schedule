@@ -9,9 +9,9 @@ def configure_logging(name, level=logging.INFO):
     return log
 
 
-def create_stream_handler(log_format='%(asctime)s %(name)s %(levelname)s %(message)s'):
+def create_stream_handler(log_format='[%(asctime)s] [%(name)s] [%(levelname)s] %(message)s', time_format='%Y-%m-%d %H:%M:%S'):
     stream = sys.stdout
     stream_handler = logging.StreamHandler(stream)
     stream_handler.setLevel(logging.DEBUG)
-    stream_handler.setFormatter(logging.Formatter(log_format))
+    stream_handler.setFormatter(logging.Formatter(log_format, time_format))
     return stream_handler

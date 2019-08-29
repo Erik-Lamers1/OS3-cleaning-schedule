@@ -21,7 +21,7 @@ and assign them to the different cleaning tasks that should be preformed at OS3 
 Author: Erik Lamers
 """
 
-logger = configure_logging(__name__)
+logger = configure_logging('cleaning_schedule')
 
 
 def parse_args(args=None):
@@ -68,9 +68,9 @@ def parse_args(args=None):
         parser.error('No password given and $OS3_HTTP_PASS not set')
 
     # Check for valid emails
-    mail = Mail()
+    mail_parser = Mail()
     if not args.no_email and not \
-            (mail.verify_email_addresses([args.email]) or (args.cc and not mail.verify_email_addresses(args.cc))):
+            (mail_parser.verify_email_addresses([args.email]) or (args.cc and not mail_parser.verify_email_addresses(args.cc))):
         parser.error('Email addresses not valid!')
 
     if args.no_email and args.cc:
@@ -235,8 +235,8 @@ def main(args=None):
             email_body.decode('utf-8'),
             args.cc
         )
-        if website.send_email('cleaning-schedule@os3.nl', args.cc.append(args.email) if args.cc else [args.email],
-                              message):
+        to_addrs = args.cc + args.email.split() if args.cc else args.email.split()
+        if website.send_email('cleaning-schedule@os3.nl', to_addrs, message):
             logger.info('Email sent')
         else:
             # Mail sending failed

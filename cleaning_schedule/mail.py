@@ -66,10 +66,10 @@ class Mail:
         self.logger.debug('Constructing MIME email message')
         msg = MIMEMultipart('alternative')
         msg['From'] = self.from_address
-        msg['Subject'] = subject
         msg['To'] = to
         if cc:
             self.logger.info('Sending CC to {}'.format(', '.join(cc)))
             msg['Cc'] = ', '.join(cc)
+        msg['Subject'] = subject
         msg.attach(MIMEText(body, 'html'))
         return msg.as_string()

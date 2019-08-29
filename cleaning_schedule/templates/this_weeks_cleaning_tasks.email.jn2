@@ -366,7 +366,7 @@
                          <p>Heads up!<br/> The student list has been rotated.</p>
                          {% endif %}
 
-                          <p>Please check {{ cleaning_url }} for more information. <br />
+                          <p>Please check <a href="{{ cleaning_url }}">the OS3 cleaning page</a> for more information. <br />
                          And the reason why you receive this email.</p>
 
                         <p>Good luck! Together we keep the flies out.</p>
