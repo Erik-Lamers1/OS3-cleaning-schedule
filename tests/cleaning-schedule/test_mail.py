@@ -1,11 +1,9 @@
 from logging import WARNING
-from email.mime.text import MIMEText
-
-from unittest.mock import MagicMock
 from tests import MyTestCase
+from os.path import join
 
 from cleaning_schedule.mail import Mail
-from cleaning_schedule.settings.base import EMAIL_TEMPLATE
+from cleaning_schedule.settings.base import EMAIL_TEMPLATE, PROJECT_DIR
 
 
 class TestMailLogLevel(MyTestCase):
@@ -26,7 +24,7 @@ class TestMail(MyTestCase):
     def test_render_template_calls_correct_functions(self):
         self.mail.render_template()
         self.logger.debug.assert_called_once_with('Rendering email template from {}'.format(EMAIL_TEMPLATE))
-        self.jinja.FileSystemLoader.assert_called_once_with(searchpath="./templates")
+        self.jinja.FileSystemLoader.assert_called_once_with(searchpath=join(PROJECT_DIR, "templates"))
         self.jinja.Environment.assert_called_once_with(loader=self.jinja.FileSystemLoader())
         self.jinja.Environment().get_template.assert_called_once_with(EMAIL_TEMPLATE)
 

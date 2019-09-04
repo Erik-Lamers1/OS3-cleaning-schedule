@@ -101,16 +101,19 @@ def get_student_list_from_website(website):
     return students
 
 
-def get_cleaning_tasks_from_website(website):
+def get_cleaning_tasks_from_website(website, year):
     """
     Curl the OS3 CLEANING_TASK_LIST_URL to get a list of cleaning tasks.
     :param website: OS3 website class object
+    :param year: str: The year of OS3 to use
     :return: list: Cleaning tasks
     """
     cleaning_tasks = []
     for i in range(0, MAX_WEBSITE_RETRIES):
         logger.info('Getting list of cleaning tasks')
-        cleaning_tasks = website.get_elements_from_webpage(CLEANING_TASK_LIST_URL, "li", **{"class": "level1"})
+        cleaning_tasks = website.get_elements_from_webpage(
+            CLEANING_TASK_LIST_URL.format(year), "li", **{"class": "level1"}
+        )
         if cleaning_tasks:
             break
         else:
@@ -179,7 +182,7 @@ def main(args=None):
             )
 
     # Get de items of the cleaning page
-    cleaning_tasks = get_cleaning_tasks_from_website(website)
+    cleaning_tasks = get_cleaning_tasks_from_website(website, args.year)
     if not cleaning_tasks:
         logger.error('Could not find any cleaning tasks!')
         logger.warning('Assuming os3.nl playground page is broken, continuing with empty task list')
@@ -215,7 +218,7 @@ def main(args=None):
     try:
         email_body = mail.render_template(**{
             'date': date,
-            'cleaning_url': CLEANING_TASK_LIST_URL,
+            'cleaning_url': CLEANING_TASK_LIST_URL.format(args.year),
             'students': picked_students,
             'cleaning_tasks': cleaning_tasks,
             'list_rotated': create_student_file
