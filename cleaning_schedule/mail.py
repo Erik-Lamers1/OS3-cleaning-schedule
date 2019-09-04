@@ -2,9 +2,10 @@ import jinja2
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from email.utils import parseaddr
+from os.path import join
 
 from cleaning_schedule.utils.logger import configure_logging
-from cleaning_schedule.settings.base import EMAIL_TEMPLATE
+from cleaning_schedule.settings.base import EMAIL_TEMPLATE, PROJECT_DIR
 
 logger = configure_logging(__name__)
 
@@ -35,7 +36,7 @@ class Mail:
         :return: blob: The rendered template (UTF-8 encoded)
         """
         self.logger.debug('Rendering email template from {}'.format(self.template))
-        template_loader = jinja2.FileSystemLoader(searchpath="./templates")
+        template_loader = jinja2.FileSystemLoader(searchpath=join(PROJECT_DIR, "templates"))
         template_env = jinja2.Environment(loader=template_loader)
         template_file = self.template
         template = template_env.get_template(template_file)
