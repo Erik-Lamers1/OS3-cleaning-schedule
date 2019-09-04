@@ -63,9 +63,9 @@ def parse_args(args=None):
     args = parser.parse_args(args)
     # Check if HTTP auth creds are present
     if not args.user:
-        parser.error('No user given and $OS3_HTTP_USER not set')
+        parser.error('No user given and $OS3_USER not set')
     elif not args.password:
-        parser.error('No password given and $OS3_HTTP_PASS not set')
+        parser.error('No password given and $OS3_PASS not set')
 
     # Check for valid emails
     mail_parser = Mail()
