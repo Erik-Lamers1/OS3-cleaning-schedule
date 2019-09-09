@@ -348,7 +348,7 @@
                         <p>Hi all,</p>
                         <p>This is the generated OS3 cleaning schedule for the week of {{ date }}</p>
 
-                         <p>This weeks cleaning ladies are:</p>
+                         <p>This weeks cleaning crew is:</p>
                          <ul>
                          {% for student in students %}
                          <li><b>{{ student }}</b></li>
